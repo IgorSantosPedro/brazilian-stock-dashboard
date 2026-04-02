@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Woman Rides</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: #fff;
+      border-radius: 44px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    /* ── SCREEN ── */
+    .screen {
+      display: none;
+      width: 100%;
+      height: 100%;
+      flex-direction: column;
+      position: absolute;
+      top: 0; left: 0;
+    }
+    .screen.active { display: flex; }
+
+    /* ── MAP BG ── */
+    .map-bg {
+      flex: 1;
+      background: #e8e0d4;
+      position: relative;
+      overflow: hidden;
+    }
+    .map-bg svg { width: 100%; height: 100%; }
+
+    /* ── BOTTOM CARD ── */
+    .bottom-card {
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      padding: 16px 20px 32px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    }
+
+    /* ── SCREEN 1: HOME ── */
+    #s1 .map-bg {
+      background: linear-gradient(160deg, #d4e8d4 0%, #c8dcc8 40%, #d0d8b8 100%);
+    }
+    #s1 .search-bar {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: #999;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    #s1 .search-bar span { color: #bbb; font-size: 18px; }
+    #s1 .home-tag {
+      position: absolute;
+      bottom: 80px;
+      left: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.9);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #s1 .home-tag .dot { width: 8px; height: 8px; background: #e91e8c; border-radius: 50%; flex-shrink: 0; }
+    .pin {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -60%);
+      font-size: 36px;
+    }
+    .hamburger {
+      position: absolute;
+      top: 56px;
+      left: 20px;
+      width: 40px;
+      height: 40px;
+      background: #fff;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+    }
+    .hamburger span { width: 18px; height: 2px; background: #333; border-radius: 2px; }
+
+    /* ── SCREEN 2: DESTINATION ── */
+    #s2 .top-bar {
+      background: #fff;
+      padding: 56px 20px 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    #s2 .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    #s2 .input-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f7f7f7;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    #s2 .input-row .dot-origin { width: 10px; height: 10px; background: #333; border-radius: 50%; flex-shrink: 0; }
+    #s2 .input-row .dot-dest { width: 10px; height: 10px; background: #e91e8c; border-radius: 50%; flex-shrink: 0; }
+    #s2 .input-row input {
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      color: #333;
+      flex: 1;
+      outline: none;
+    }
+    #s2 .place-list { flex: 1; overflow-y: auto; padding: 0 20px; }
+    #s2 .place-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid #f5f5f5;
+      cursor: pointer;
+    }
+    #s2 .place-item:active { background: #fafafa; }
+    #s2 .place-icon {
+      width: 38px; height: 38px;
+      background: #f5f5f5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    #s2 .place-name { font-size: 14px; color: #333; font-weight: 500; }
+    #s2 .place-sub { font-size: 12px; color: #999; margin-top: 2px; }
+    .recent-header { font-size: 12px; color: #aaa; font-weight: 600; padding: 16px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* ── SCREEN 3: ROUTE MAP ── */
+    #s3 .map-bg {
+      background: linear-gradient(160deg, #d4e8d4 0%, #c8dcc8 40%, #d0d8b8 100%);
+    }
+    #s3 .back-btn {
+      position: absolute;
+      top: 56px;
+      left: 20px;
+      width: 36px; height: 36px;
+      background: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    #s3 .route-info {
+      position: absolute;
+      top: 56px;
+      left: 70px;
+      right: 20px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    #s3 .route-info .origin { color: #666; margin-bottom: 4px; }
+    #s3 .route-info .dest { color: #333; font-weight: 600; }
+    #s3 .route-info .alter-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: #e91e8c;
+      font-weight: 600;
+    }
+    #s3 .route-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+    #s3 .bottom-card { padding: 20px; }
+    #s3 .confirm-btn {
+      width: 100%;
+      background: #e91e8c;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ── SCREEN 4: RIDE OPTIONS ── */
+    #s4 .header {
+      padding: 56px 20px 16px;
+      background: #fff;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    #s4 .header h2 { font-size: 18px; font-weight: 700; color: #222; }
+    #s4 .ride-list { flex: 1; padding: 12px 20px; overflow-y: auto; }
+    .ride-option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: #fafafa;
+    }
+    .ride-option:hover { border-color: #e91e8c; background: #fff5fa; }
+    .ride-option.selected { border-color: #e91e8c; background: #fff5fa; }
+    .ride-img { width: 70px; flex-shrink: 0; }
+    .ride-img img { width: 100%; }
+    .ride-info { flex: 1; }
+    .ride-name { font-size: 16px; font-weight: 700; color: #222; display: flex; align-items: center; gap: 6px; }
+    .ride-sub { font-size: 12px; color: #999; margin-top: 2px; }
+    .ride-badge {
+      width: 18px; height: 18px;
+      background: #e91e8c;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .ride-price { font-size: 16px; font-weight: 700; color: #222; }
+    #s4 .request-btn {
+      margin: 0 20px 32px;
+      background: #e91e8c;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      width: calc(100% - 40px);
+    }
+
+    /* ── SCREEN 5: WOMAN MODAL ── */
+    #s5 {
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: flex-end;
+    }
+    #s5.active { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 24px 24px 0 0;
+      padding: 24px 24px 40px;
+      width: 100%;
+    }
+    .modal-close {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: #f5f5f5;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    .modal-img {
+      width: 100%;
+      height: 160px;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #2d2d44 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-img .driver-illustration {
+      font-size: 80px;
+    }
+    .modal h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: #222; }
+    .modal .modal-label { font-size: 13px; font-weight: 700; color: #e91e8c; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .modal p { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 24px; }
+    .modal-cta {
+      width: 100%;
+      background: #e91e8c;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .woman-icon-big {
+      width: 80px; height: 80px;
+      background: linear-gradient(135deg, #e91e8c, #ff6bb3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 20px;
+    }
+
+    /* ── SCREEN 6: RATING ── */
+    #s6 .header {
+      padding: 56px 20px 16px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .driver-avatar {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .driver-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    #s6 .driver-name { font-size: 20px; font-weight: 700; color: #222; }
+    #s6 .driver-sub { font-size: 13px; color: #999; }
+    #s6 .rating-body { padding: 24px 20px; flex: 1; overflow-y: auto; }
+    .stars { display: flex; gap: 8px; margin-bottom: 24px; }
+    .star {
+      font-size: 36px;
+      cursor: pointer;
+      transition: transform 0.1s;
+      line-height: 1;
+    }
+    .star:active { transform: scale(1.2); }
+    .star.filled { color: #ffd700; }
+    .star.empty { color: #ddd; }
+    .rating-label { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 10px; }
+    textarea {
+      width: 100%;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: none;
+      height: 80px;
+      color: #333;
+      outline: none;
+      margin-bottom: 20px;
+    }
+    textarea:focus { border-color: #e91e8c; }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .toggle-label { font-size: 14px; color: #555; max-width: 240px; line-height: 1.4; }
+    .toggle {
+      width: 46px; height: 26px;
+      background: #e91e8c;
+      border-radius: 13px;
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .toggle.off { background: #ccc; }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      top: 3px;
+      right: 3px;
+      transition: right 0.2s;
+    }
+    .toggle.off::after { right: auto; left: 3px; }
+    #s6 .submit-btn {
+      margin: 0 20px 32px;
+      width: calc(100% - 40px);
+      background: #e91e8c;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ── SCREEN 7: SUCCESS ── */
+    #s7 {
+      background: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 40px;
+      gap: 16px;
+    }
+    #s7.active { display: flex; }
+    .success-icon { font-size: 80px; }
+    #s7 h2 { font-size: 22px; font-weight: 700; color: #222; }
+    #s7 p { font-size: 15px; color: #888; line-height: 1.5; }
+    #s7 .restart-btn {
+      margin-top: 16px;
+      background: #e91e8c;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 14px 32px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* ── FAKE MAP ROADS ── */
+    .road { stroke: rgba(255,255,255,0.6); stroke-width: 3; fill: none; }
+    .road-main { stroke: rgba(255,255,255,0.8); stroke-width: 5; }
+  </style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- SCREEN 1: HOME MAP -->
+  <div class="screen active" id="s1">
+    <div class="map-bg">
+      <svg viewBox="0 0 390 620" preserveAspectRatio="xMidYMid slice">
+        <!-- Roads -->
+        <line x1="0" y1="200" x2="390" y2="200" class="road-main"/>
+        <line x1="0" y1="350" x2="390" y2="350" class="road"/>
+        <line x1="100" y1="0" x2="100" y2="620" class="road"/>
+        <line x1="250" y1="0" x2="250" y2="620" class="road-main"/>
+        <line x1="320" y1="0" x2="320" y2="620" class="road"/>
+        <line x1="50" y1="0" x2="50" y2="620" class="road"/>
+        <line x1="0" y1="100" x2="390" y2="100" class="road"/>
+        <line x1="0" y1="450" x2="390" y2="450" class="road"/>
+        <!-- Blocks -->
+        <rect x="110" y="110" width="130" height="80" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="260" y="110" width="50" height="80" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="110" y="210" width="60" height="130" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="180" y="210" width="60" height="60" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="260" y="210" width="120" height="130" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="60" y="360" width="180" height="80" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="260" y="360" width="120" height="80" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <!-- Park -->
+        <rect x="60" y="110" width="30" height="80" rx="4" fill="rgba(120,180,100,0.5)"/>
+      </svg>
+      <div class="hamburger">
+        <span></span><span></span><span></span>
+      </div>
+      <div class="pin">📍</div>
+      <div class="home-tag">
+        <div class="dot"></div>
+        Rua Doutor Miguel Vieira Ferreira, 57
+      </div>
+      <div class="search-bar" onclick="goTo('s2')">
+        <span>🔍</span>
+        Para onde vamos?
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: DESTINATION SEARCH -->
+  <div class="screen" id="s2">
+    <div class="top-bar">
+      <div class="input-group">
+        <div class="input-row">
+          <div class="dot-origin"></div>
+          <input type="text" value="Rua Doutor Miguel Vieira Ferreira, 57" readonly />
+        </div>
+        <div class="input-row">
+          <div class="dot-dest"></div>
+          <input type="text" id="dest-input" placeholder="Para onde?" autofocus />
+        </div>
+      </div>
+    </div>
+    <div class="place-list">
+      <div class="recent-header">Recentes</div>
+      <div class="place-item" onclick="selectDest('Shopping Internacional')">
+        <div class="place-icon">🛍️</div>
+        <div>
+          <div class="place-name">Shopping Internacional</div>
+          <div class="place-sub">Av. Tucuruvi, 468</div>
+        </div>
+      </div>
+      <div class="place-item" onclick="selectDest('Shopping Maia')">
+        <div class="place-icon">🏬</div>
+        <div>
+          <div class="place-name">Shopping Maia</div>
+          <div class="place-sub">Estrada do Maia, 1380</div>
+        </div>
+      </div>
+      <div class="place-item" onclick="selectDest('Metro Tucuruvi')">
+        <div class="place-icon">🚇</div>
+        <div>
+          <div class="place-name">Metrô Tucuruvi</div>
+          <div class="place-sub">Av. Tucuruvi, s/n</div>
+        </div>
+      </div>
+      <div class="place-item" onclick="selectDest('Hospital Geral de Guarulhos')">
+        <div class="place-icon">🏥</div>
+        <div>
+          <div class="place-name">Hospital Geral de Guarulhos</div>
+          <div class="place-sub">R. Dr. Prudente de Moraes, 405</div>
+        </div>
+      </div>
+      <div class="place-item" onclick="selectDest('Extra Supermercados')">
+        <div class="place-icon">🛒</div>
+        <div>
+          <div class="place-name">Extra Supermercados</div>
+          <div class="place-sub">Av. Tucuruvi, 1059</div>
+        </div>
+      </div>
+      <div class="place-item" onclick="selectDest('Rodoviária Tietê')">
+        <div class="place-icon">🚌</div>
+        <div>
+          <div class="place-name">Rodoviária Tietê</div>
+          <div class="place-sub">Av. Cruzeiro do Sul, 1800</div>
+        </div>
+      </div>
+      <div class="place-item" onclick="selectDest('Shopping Tucuruvi')">
+        <div class="place-icon">🏪</div>
+        <div>
+          <div class="place-name">Shopping Tucuruvi</div>
+          <div class="place-sub">Av. Tucuruvi, 1033</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: ROUTE MAP -->
+  <div class="screen" id="s3">
+    <div class="map-bg">
+      <svg viewBox="0 0 390 620" preserveAspectRatio="xMidYMid slice" class="route-svg">
+        <line x1="0" y1="200" x2="390" y2="200" class="road-main"/>
+        <line x1="0" y1="350" x2="390" y2="350" class="road"/>
+        <line x1="100" y1="0" x2="100" y2="620" class="road"/>
+        <line x1="250" y1="0" x2="250" y2="620" class="road-main"/>
+        <line x1="320" y1="0" x2="320" y2="620" class="road"/>
+        <line x1="50" y1="0" x2="50" y2="620" class="road"/>
+        <line x1="0" y1="100" x2="390" y2="100" class="road"/>
+        <line x1="0" y1="450" x2="390" y2="450" class="road"/>
+        <rect x="110" y="110" width="130" height="80" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="260" y="110" width="50" height="80" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="110" y="210" width="60" height="130" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="260" y="210" width="120" height="130" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <rect x="60" y="360" width="180" height="80" rx="4" fill="rgba(180,170,150,0.4)"/>
+        <!-- ROUTE LINE -->
+        <polyline points="120,460 120,350 250,350 250,150 320,150"
+          stroke="#e91e8c" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"
+          stroke-dasharray="12,4"/>
+        <!-- Origin dot -->
+        <circle cx="120" cy="460" r="8" fill="#e91e8c"/>
+        <circle cx="120" cy="460" r="14" fill="rgba(233,30,140,0.25)"/>
+        <!-- Dest dot -->
+        <circle cx="320" cy="150" r="8" fill="#333"/>
+        <circle cx="320" cy="150" r="14" fill="rgba(0,0,0,0.15)"/>
+      </svg>
+      <div class="back-btn" onclick="goTo('s2')">←</div>
+      <div class="route-info">
+        <div class="origin">● R. Dr. Miguel Vieira Ferreira, 57</div>
+        <div class="dest">● <span id="dest-display">Shopping Internacional</span></div>
+        <div class="alter-btn">Alterar</div>
+      </div>
+    </div>
+    <div class="bottom-card">
+      <button class="confirm-btn" onclick="goTo('s4')">Confirmar destino</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: RIDE OPTIONS -->
+  <div class="screen" id="s4">
+    <div class="header">
+      <h2>Escolha sua corrida</h2>
+    </div>
+    <div class="ride-list">
+      <div class="ride-option selected" id="opt-pop" onclick="selectRide('pop')">
+        <div class="ride-img">
+          <!-- Orange car SVG -->
+          <svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="20" width="80" height="22" rx="4" fill="#FF6B35"/>
+            <rect x="20" y="10" width="50" height="18" rx="6" fill="#FF8C5A"/>
+            <circle cx="25" cy="44" r="7" fill="#333"/>
+            <circle cx="25" cy="44" r="3" fill="#aaa"/>
+            <circle cx="75" cy="44" r="7" fill="#333"/>
+            <circle cx="75" cy="44" r="3" fill="#aaa"/>
+            <rect x="22" y="12" width="22" height="12" rx="2" fill="rgba(150,210,255,0.7)"/>
+            <rect x="48" y="12" width="20" height="12" rx="2" fill="rgba(150,210,255,0.7)"/>
+          </svg>
+        </div>
+        <div class="ride-info">
+          <div class="ride-name">Pop</div>
+          <div class="ride-sub">Desembarque: 12:45</div>
+        </div>
+        <div class="ride-price">R$ 14,65</div>
+      </div>
+
+      <div class="ride-option" id="opt-woman" onclick="selectRide('woman')">
+        <div class="ride-img">
+          <!-- Blue car SVG -->
+          <svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="20" width="80" height="22" rx="4" fill="#4A90D9"/>
+            <rect x="20" y="10" width="50" height="18" rx="6" fill="#6EB0F0"/>
+            <circle cx="25" cy="44" r="7" fill="#333"/>
+            <circle cx="25" cy="44" r="3" fill="#aaa"/>
+            <circle cx="75" cy="44" r="7" fill="#333"/>
+            <circle cx="75" cy="44" r="3" fill="#aaa"/>
+            <rect x="22" y="12" width="22" height="12" rx="2" fill="rgba(150,210,255,0.7)"/>
+            <rect x="48" y="12" width="20" height="12" rx="2" fill="rgba(150,210,255,0.7)"/>
+            <!-- Woman symbol on car -->
+            <circle cx="85" cy="15" r="6" fill="#e91e8c" opacity="0.9"/>
+            <text x="85" y="19" text-anchor="middle" fill="white" font-size="8" font-weight="bold">♀</text>
+          </svg>
+        </div>
+        <div class="ride-info">
+          <div class="ride-name">
+            Woman
+            <div class="ride-badge" onclick="showWomanInfo(event)">?</div>
+          </div>
+          <div class="ride-sub">Desembarque: 12:45</div>
+        </div>
+        <div class="ride-price">R$ 16,80</div>
+      </div>
+
+      <div class="ride-option" id="opt-confort" onclick="selectRide('confort')">
+        <div class="ride-img">
+          <!-- Gray car SVG (bigger) -->
+          <svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="18" width="90" height="24" rx="5" fill="#555"/>
+            <rect x="15" y="8" width="58" height="18" rx="7" fill="#777"/>
+            <circle cx="22" cy="44" r="7" fill="#222"/>
+            <circle cx="22" cy="44" r="3" fill="#888"/>
+            <circle cx="78" cy="44" r="7" fill="#222"/>
+            <circle cx="78" cy="44" r="3" fill="#888"/>
+            <rect x="18" y="10" width="24" height="12" rx="2" fill="rgba(150,210,255,0.7)"/>
+            <rect x="46" y="10" width="24" height="12" rx="2" fill="rgba(150,210,255,0.7)"/>
+          </svg>
+        </div>
+        <div class="ride-info">
+          <div class="ride-name">Confort</div>
+          <div class="ride-sub">Desembarque: 12:45</div>
+        </div>
+        <div class="ride-price">R$ 19,00</div>
+      </div>
+    </div>
+    <button class="request-btn" onclick="requestRide()">Pedir corrida</button>
+  </div>
+
+  <!-- SCREEN 5: WOMAN INFO MODAL (overlay) -->
+  <div class="screen" id="s5">
+    <div style="flex:1" onclick="goTo('s4')"></div>
+    <div class="modal">
+      <button class="modal-close" onclick="goTo('s4')">✕</button>
+      <div class="modal-img">
+        <div class="driver-illustration">👩‍💼</div>
+      </div>
+      <div class="modal-label">Woman</div>
+      <h3>O que é?</h3>
+      <p>
+        Criado para as mulheres, o carro woman é a forma mais confortável e segura delas se locomoverem.
+        Aqui, a prioridade é das motoristas e, se não encontrarmos nenhuma para você, o motorista que vir
+        será aquele que tiver os melhores reviews dentre as nossas clientes!
+      </p>
+      <button class="modal-cta" onclick="confirmWoman()">Pedir Woman</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: RATING -->
+  <div class="screen" id="s6">
+    <div class="header">
+      <div class="driver-avatar">🧑</div>
+      <div>
+        <div class="driver-name">João</div>
+        <div class="driver-sub">Corrida concluída · 8,3 km</div>
+      </div>
+    </div>
+    <div class="rating-body">
+      <div class="rating-label">Como foi sua viagem?</div>
+      <div class="stars" id="stars">
+        <span class="star filled" data-v="1" onclick="setRating(1)">★</span>
+        <span class="star filled" data-v="2" onclick="setRating(2)">★</span>
+        <span class="star filled" data-v="3" onclick="setRating(3)">★</span>
+        <span class="star filled" data-v="4" onclick="setRating(4)">★</span>
+        <span class="star empty" data-v="5" onclick="setRating(5)">★</span>
+      </div>
+      <div class="rating-label">Comentário:</div>
+      <textarea placeholder="Conte como foi a sua corrida..."></textarea>
+      <div class="toggle-row">
+        <span class="toggle-label">Recomendaria para o programa Woman?</span>
+        <div class="toggle" id="recommend-toggle" onclick="toggleRecommend()"></div>
+      </div>
+    </div>
+    <button class="submit-btn" onclick="goTo('s7')">Avaliar</button>
+  </div>
+
+  <!-- SCREEN 7: SUCCESS -->
+  <div class="screen" id="s7">
+    <div class="success-icon">🎉</div>
+    <h2>Obrigada pela avaliação!</h2>
+    <p>Sua opinião ajuda a melhorar a experiência para todas as mulheres do programa Woman.</p>
+    <button class="restart-btn" onclick="restart()">Nova corrida</button>
+  </div>
+
+</div>
+
+<script>
+  let currentRide = 'pop';
+  let rating = 4;
+  let recommendOn = true;
+  let selectedDest = 'Shopping Internacional';
+
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function selectDest(name) {
+    selectedDest = name;
+    document.getElementById('dest-display').textContent = name;
+    goTo('s3');
+  }
+
+  function selectRide(type) {
+    currentRide = type;
+    document.querySelectorAll('.ride-option').forEach(el => el.classList.remove('selected'));
+    document.getElementById('opt-' + type).classList.add('selected');
+  }
+
+  function showWomanInfo(e) {
+    e.stopPropagation();
+    goTo('s5');
+  }
+
+  function confirmWoman() {
+    selectRide('woman');
+    goTo('s4');
+  }
+
+  function requestRide() {
+    // Show a loading then rating
+    const phone = document.querySelector('.phone');
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:100;border-radius:44px';
+    overlay.innerHTML = `
+      <div style="font-size:48px">🚗</div>
+      <div style="font-size:18px;font-weight:700;color:#222">Encontrando sua motorista...</div>
+      <div style="font-size:14px;color:#999">Aguarde um momento</div>
+      <div style="width:200px;height:4px;background:#f0f0f0;border-radius:2px;overflow:hidden;margin-top:8px">
+        <div id="loading-bar" style="height:100%;background:#e91e8c;border-radius:2px;width:0%;transition:width 2s ease"></div>
+      </div>
+    `;
+    phone.appendChild(overlay);
+    setTimeout(() => { document.getElementById('loading-bar').style.width = '100%'; }, 50);
+    setTimeout(() => {
+      phone.removeChild(overlay);
+      goTo('s6');
+    }, 2200);
+  }
+
+  function setRating(val) {
+    rating = val;
+    document.querySelectorAll('.star').forEach(s => {
+      const v = parseInt(s.dataset.v);
+      if (v <= val) { s.classList.add('filled'); s.classList.remove('empty'); }
+      else { s.classList.remove('filled'); s.classList.add('empty'); }
+    });
+  }
+
+  function toggleRecommend() {
+    recommendOn = !recommendOn;
+    const t = document.getElementById('recommend-toggle');
+    if (recommendOn) t.classList.remove('off');
+    else t.classList.add('off');
+  }
+
+  function restart() {
+    currentRide = 'pop';
+    rating = 4;
+    recommendOn = true;
+    setRating(4);
+    document.getElementById('recommend-toggle').classList.remove('off');
+    document.querySelectorAll('.ride-option').forEach(el => el.classList.remove('selected'));
+    document.getElementById('opt-pop').classList.add('selected');
+    goTo('s1');
+  }
+</script>
+</body>
+</html>
