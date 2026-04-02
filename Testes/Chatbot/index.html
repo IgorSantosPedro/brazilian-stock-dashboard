@@ -1,15 +1,657 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ConvênioSaúde+ | Planos de Saúde</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            keyframes: {
+              bounce: { '0%,100%': { transform: 'translateY(-25%)' }, '50%': { transform: 'translateY(0)' } },
+              pulse: { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.5 } },
+              'slide-up': { '0%': { opacity: 0, transform: 'translateY(16px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            },
+            animation: {
+              'slide-up': 'slide-up 0.3s ease-out',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+      * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
 
-  <!DOCTYPE html>
-  <html lang="en">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Fluxo conversacional de bot</title>
-    </head>
+      /* Chat animations */
+      @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes typingBounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-6px); } }
+      @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+      @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
-    <body>
-      <div id="root"></div>
-      <script type="module" src="/src/main.tsx"></script>
-    </body>
-  </html>
-  
+      .chat-panel { animation: slideUp 0.3s ease-out; }
+      .typing-dot { animation: typingBounce 1.2s infinite ease-in-out; }
+      .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+      .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+      .pulse-dot { animation: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite; }
+      .msg-in { animation: fadeIn 0.25s ease; }
+
+      /* Scrollbar */
+      #chat-messages::-webkit-scrollbar { width: 4px; }
+      #chat-messages::-webkit-scrollbar-track { background: transparent; }
+      #chat-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+    </style>
+  </head>
+  <body class="bg-white text-gray-900">
+
+    <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+    <header id="header" class="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100 shadow-sm">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+
+          <!-- Logo -->
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 bg-gradient-to-br from-teal-500 to-teal-700 rounded-xl flex items-center justify-center shadow-md">
+              <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/>
+              </svg>
+            </div>
+            <span class="text-xl font-bold">Convênio<span class="text-teal-600">Saúde+</span></span>
+          </div>
+
+          <!-- Desktop nav -->
+          <nav class="hidden md:flex items-center gap-8">
+            <a href="#planos" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition-colors">Planos</a>
+            <a href="#cobertura" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition-colors">Cobertura</a>
+            <a href="#beneficios" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition-colors">Benefícios</a>
+            <a href="#depoimentos" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition-colors">Depoimentos</a>
+            <a href="#contato" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition-colors">Contato</a>
+          </nav>
+
+          <div class="hidden md:flex items-center gap-3">
+            <a href="#" class="text-sm font-medium text-gray-600 hover:text-teal-600 transition-colors">Área do Beneficiário</a>
+            <button class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+              Contratar Plano
+            </button>
+          </div>
+
+          <!-- Mobile menu button -->
+          <button id="menu-btn" class="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors" aria-label="Menu">
+            <svg id="menu-icon-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            <svg id="menu-icon-close" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-gray-100 pt-3 space-y-1">
+          <a href="#planos" class="block py-2 text-sm font-medium text-gray-700 hover:text-teal-600">Planos</a>
+          <a href="#cobertura" class="block py-2 text-sm font-medium text-gray-700 hover:text-teal-600">Cobertura</a>
+          <a href="#beneficios" class="block py-2 text-sm font-medium text-gray-700 hover:text-teal-600">Benefícios</a>
+          <a href="#depoimentos" class="block py-2 text-sm font-medium text-gray-700 hover:text-teal-600">Depoimentos</a>
+          <a href="#contato" class="block py-2 text-sm font-medium text-gray-700 hover:text-teal-600">Contato</a>
+          <div class="pt-2 space-y-2">
+            <a href="#" class="block py-2 text-sm font-medium text-gray-600">Área do Beneficiário</a>
+            <button class="w-full py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg">Contratar Plano</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════ HERO ═══════════════════════ -->
+    <section class="relative overflow-hidden bg-gradient-to-br from-teal-50 via-white to-emerald-50 pt-16 pb-20 lg:pt-24 lg:pb-28">
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="absolute top-0 right-0 w-96 h-96 bg-teal-100 rounded-full opacity-40 blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+        <div class="absolute bottom-0 left-0 w-80 h-80 bg-emerald-100 rounded-full opacity-50 blur-3xl translate-y-1/2 -translate-x-1/4"></div>
+      </div>
+      <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <span class="inline-flex items-center gap-2 px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-semibold mb-6">
+              <span class="w-1.5 h-1.5 bg-teal-500 rounded-full pulse-dot"></span>
+              Mais de 500 mil beneficiários satisfeitos
+            </span>
+            <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight mb-6">
+              Cuidamos da sua saúde,<br><span class="text-teal-600">você cuida do que ama</span>
+            </h1>
+            <p class="text-lg text-gray-600 mb-8 leading-relaxed">
+              Planos de saúde completos com ampla rede credenciada, atendimento 24h e agendamento digital. Sua saúde em boas mãos, onde você estiver.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4">
+              <a href="#planos" class="px-8 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl transition-all shadow-lg text-center hover:scale-105 duration-200">
+                Conhecer Planos
+              </a>
+              <button onclick="openChat()" class="px-8 py-3.5 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-xl transition-all border border-gray-200 shadow-sm text-center hover:scale-105 duration-200">
+                Falar com Especialista
+              </button>
+            </div>
+            <div class="flex items-center gap-6 mt-10">
+              <div class="flex -space-x-3">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow">MR</div>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow">JS</div>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow">KC</div>
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow">LP</div>
+              </div>
+              <div>
+                <div class="text-amber-400 text-sm">★★★★★</div>
+                <p class="text-xs text-gray-500 mt-0.5">+8.000 avaliações 5 estrelas</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero card -->
+          <div class="hidden lg:flex justify-center">
+            <div class="relative w-96">
+              <div class="absolute inset-0 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-3xl shadow-2xl opacity-10 rotate-6"></div>
+              <div class="absolute inset-0 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-3xl shadow-2xl -rotate-3"></div>
+              <div class="relative bg-white rounded-3xl shadow-xl p-8 flex flex-col gap-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl">🏥</div>
+                  <div><p class="font-bold text-gray-900">Consulta Agendada</p><p class="text-sm text-gray-500">Cardiologia · Amanhã, 10h</p></div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-3xl">🔬</div>
+                  <div><p class="font-bold text-gray-900">Exames Prontos</p><p class="text-sm text-gray-500">Resultado disponível online</p></div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-3xl">💊</div>
+                  <div><p class="font-bold text-gray-900">Desconto em Farmácia</p><p class="text-sm text-gray-500">Economia de R$ 48,00 hoje</p></div>
+                </div>
+                <div class="flex items-center gap-4">
+                  <div class="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-3xl">⭐</div>
+                  <div><p class="font-bold text-gray-900">Check-up Anual</p><p class="text-sm text-gray-500">Próxima revisão em 30 dias</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ STATS ═══════════════════════ -->
+    <section class="bg-teal-700 py-12">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
+          <div><p class="text-3xl lg:text-4xl font-bold">+500 mil</p><p class="text-teal-200 mt-1 text-sm">Beneficiários</p></div>
+          <div><p class="text-3xl lg:text-4xl font-bold">+2.000</p><p class="text-teal-200 mt-1 text-sm">Médicos credenciados</p></div>
+          <div><p class="text-3xl lg:text-4xl font-bold">+300</p><p class="text-teal-200 mt-1 text-sm">Hospitais parceiros</p></div>
+          <div><p class="text-3xl lg:text-4xl font-bold">24 anos</p><p class="text-teal-200 mt-1 text-sm">De experiência</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ PLANS ═══════════════════════ -->
+    <section id="planos" class="py-20 bg-gray-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-14">
+          <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Planos para cada necessidade</h2>
+          <p class="text-gray-500 max-w-xl mx-auto">Escolha o plano ideal para você e sua família. Todos com carência reduzida e cobertura nacional.</p>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8">
+
+          <!-- Básico -->
+          <div class="relative bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col">
+            <div class="text-4xl mb-4">💼</div>
+            <h3 class="text-xl font-bold text-gray-900 mb-1">Plano Básico</h3>
+            <div class="flex items-baseline gap-1 mb-6"><span class="text-sm text-gray-500">R$</span><span class="text-4xl font-extrabold text-gray-900">199</span><span class="text-gray-400 text-sm">/mês</span></div>
+            <ul class="space-y-2.5 mb-6 flex-1 text-sm">
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Consultas ilimitadas</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Exames laboratoriais</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Raio-X e ultrassom</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Rede credenciada ampla</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Pronto-socorro 24h</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Agendamento online</li>
+              <li class="flex items-start gap-2 text-gray-400"><svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>Internações</li>
+              <li class="flex items-start gap-2 text-gray-400"><svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>Cirurgias eletivas</li>
+              <li class="flex items-start gap-2 text-gray-400"><svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>Atendimento domiciliar</li>
+            </ul>
+            <button class="w-full py-3 rounded-xl font-semibold text-sm bg-gray-100 hover:bg-teal-50 text-gray-800 hover:text-teal-700 border border-gray-200 hover:border-teal-300 transition-all">Contratar Básico</button>
+          </div>
+
+          <!-- Premium -->
+          <div class="relative bg-white rounded-2xl border-2 border-teal-500 p-8 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col">
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-teal-600 text-white text-xs font-bold rounded-full shadow">Mais popular</span>
+            <div class="text-4xl mb-4">💎</div>
+            <h3 class="text-xl font-bold text-gray-900 mb-1">Plano Premium</h3>
+            <div class="flex items-baseline gap-1 mb-6"><span class="text-sm text-gray-500">R$</span><span class="text-4xl font-extrabold text-gray-900">349</span><span class="text-gray-400 text-sm">/mês</span></div>
+            <ul class="space-y-2.5 mb-6 flex-1 text-sm">
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Tudo do Plano Básico</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Internações e cirurgias</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Tomografia e ressonância</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Endoscopia</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>UTI e emergências</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Acompanhante 24h</li>
+              <li class="flex items-start gap-2 text-gray-400"><svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>Atendimento domiciliar</li>
+              <li class="flex items-start gap-2 text-gray-400"><svg class="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>Rede internacional</li>
+            </ul>
+            <button class="w-full py-3 rounded-xl font-semibold text-sm bg-teal-600 hover:bg-teal-700 text-white shadow-md transition-all">Contratar Premium</button>
+          </div>
+
+          <!-- VIP -->
+          <div class="relative bg-white rounded-2xl border-2 border-amber-400 p-8 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 flex flex-col">
+            <span class="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-amber-500 text-white text-xs font-bold rounded-full shadow">Sem carência</span>
+            <div class="text-4xl mb-4">⭐</div>
+            <h3 class="text-xl font-bold text-gray-900 mb-1">Plano VIP</h3>
+            <div class="flex items-baseline gap-1 mb-6"><span class="text-sm text-gray-500">R$</span><span class="text-4xl font-extrabold text-gray-900">549</span><span class="text-gray-400 text-sm">/mês</span></div>
+            <ul class="space-y-2.5 mb-6 flex-1 text-sm">
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Tudo do Plano Premium</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Atendimento domiciliar</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Rede internacional</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Sem carência</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Médico de família</li>
+              <li class="flex items-start gap-2 text-gray-700"><svg class="w-4 h-4 text-teal-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>Check-up anual completo</li>
+            </ul>
+            <button class="w-full py-3 rounded-xl font-semibold text-sm bg-gray-100 hover:bg-amber-50 text-gray-800 hover:text-amber-700 border border-gray-200 hover:border-amber-300 transition-all">Contratar VIP</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ BENEFITS ═══════════════════════ -->
+    <section id="beneficios" class="py-20 bg-white">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-14">
+          <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Por que escolher o ConvênioSaúde+?</h2>
+          <p class="text-gray-500 max-w-xl mx-auto">Oferecemos muito mais do que cobertura médica. Oferecemos tranquilidade para você e sua família.</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+          <div class="p-6 rounded-2xl bg-gray-50 hover:bg-teal-50 border border-transparent hover:border-teal-100 transition-all duration-200 group">
+            <div class="text-4xl mb-4">🏥</div><h4 class="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">+300 Hospitais</h4><p class="text-sm text-gray-500">Rede credenciada em todo o Brasil</p>
+          </div>
+          <div class="p-6 rounded-2xl bg-gray-50 hover:bg-teal-50 border border-transparent hover:border-teal-100 transition-all duration-200 group">
+            <div class="text-4xl mb-4">👨‍⚕️</div><h4 class="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">+2.000 Médicos</h4><p class="text-sm text-gray-500">Especialistas em todas as áreas</p>
+          </div>
+          <div class="p-6 rounded-2xl bg-gray-50 hover:bg-teal-50 border border-transparent hover:border-teal-100 transition-all duration-200 group">
+            <div class="text-4xl mb-4">📱</div><h4 class="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">App & Online</h4><p class="text-sm text-gray-500">Agendamento e resultados digitais</p>
+          </div>
+          <div class="p-6 rounded-2xl bg-gray-50 hover:bg-teal-50 border border-transparent hover:border-teal-100 transition-all duration-200 group">
+            <div class="text-4xl mb-4">🚑</div><h4 class="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">Emergência 24h</h4><p class="text-sm text-gray-500">Atendimento a qualquer hora</p>
+          </div>
+          <div class="p-6 rounded-2xl bg-gray-50 hover:bg-teal-50 border border-transparent hover:border-teal-100 transition-all duration-200 group">
+            <div class="text-4xl mb-4">🧬</div><h4 class="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">+50 Especialidades</h4><p class="text-sm text-gray-500">Cobertura médica completa</p>
+          </div>
+          <div class="p-6 rounded-2xl bg-gray-50 hover:bg-teal-50 border border-transparent hover:border-teal-100 transition-all duration-200 group">
+            <div class="text-4xl mb-4">💊</div><h4 class="font-bold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">Descontos em Farmácias</h4><p class="text-sm text-gray-500">Até 40% em medicamentos</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ TESTIMONIALS ═══════════════════════ -->
+    <section id="depoimentos" class="py-20 bg-gradient-to-br from-teal-50 to-emerald-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-14">
+          <h2 class="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">O que nossos beneficiários dizem</h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-8">
+          <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="text-amber-400 text-sm mb-4">★★★★★</div>
+            <p class="text-gray-700 leading-relaxed mb-6 text-sm">"O ConvênioSaúde+ mudou minha vida. Agendamento fácil, médicos excelentes e atendimento rápido. Recomendo para toda a família!"</p>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center text-white text-sm font-bold">AP</div>
+              <div><p class="font-semibold text-gray-900 text-sm">Ana Paula Silva</p><p class="text-xs text-gray-500">Beneficiária há 3 anos</p></div>
+            </div>
+          </div>
+          <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="text-amber-400 text-sm mb-4">★★★★★</div>
+            <p class="text-gray-700 leading-relaxed mb-6 text-sm">"Precisei de uma internação urgente e fui atendido em menos de 1 hora. A cobertura é completa e o suporte é incrível."</p>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center text-white text-sm font-bold">CM</div>
+              <div><p class="font-semibold text-gray-900 text-sm">Carlos Mendes</p><p class="text-xs text-gray-500">Plano Premium</p></div>
+            </div>
+          </div>
+          <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="text-amber-400 text-sm mb-4">★★★★★</div>
+            <p class="text-gray-700 leading-relaxed mb-6 text-sm">"O check-up anual completo é fantástico. Detectamos problemas cedo e hoje estou muito bem. Vale cada centavo!"</p>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center text-white text-sm font-bold">FC</div>
+              <div><p class="font-semibold text-gray-900 text-sm">Fernanda Costa</p><p class="text-xs text-gray-500">Plano VIP</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ CTA ═══════════════════════ -->
+    <section class="py-20 bg-gradient-to-r from-teal-600 to-emerald-600 text-white">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 class="text-3xl lg:text-4xl font-bold mb-4">Cuide-se com quem entende de saúde</h2>
+        <p class="text-teal-100 text-lg mb-10 max-w-xl mx-auto">Junte-se a mais de 500 mil brasileiros que confiam no ConvênioSaúde+. Sem burocracia, com muito cuidado.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a href="#planos" class="px-10 py-4 bg-white text-teal-700 font-bold rounded-xl hover:bg-teal-50 transition-all shadow-lg hover:scale-105 duration-200 text-center">Ver Planos</a>
+          <button onclick="openChat()" class="px-10 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/30 transition-all hover:scale-105 duration-200">Falar com Consultor</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+    <footer id="contato" class="bg-gray-900 text-gray-400 py-14">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+          <div class="col-span-2 md:col-span-1">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="w-8 h-8 bg-teal-600 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.593c-5.63-5.539-11-10.297-11-14.402 0-3.791 3.068-5.191 5.281-5.191 1.312 0 4.151.501 5.719 4.457 1.59-3.968 4.464-4.447 5.726-4.447 2.54 0 5.274 1.621 5.274 5.181 0 4.069-5.136 8.625-11 14.402z"/></svg>
+              </div>
+              <span class="text-white font-bold">ConvênioSaúde+</span>
+            </div>
+            <p class="text-sm leading-relaxed mb-4">Cuidando da saúde dos brasileiros há 24 anos com qualidade e dedicação.</p>
+          </div>
+          <div>
+            <h5 class="text-white font-semibold mb-4 text-sm">Planos</h5>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#planos" class="hover:text-teal-400 transition-colors">Plano Básico</a></li>
+              <li><a href="#planos" class="hover:text-teal-400 transition-colors">Plano Premium</a></li>
+              <li><a href="#planos" class="hover:text-teal-400 transition-colors">Plano VIP</a></li>
+              <li><a href="#" class="hover:text-teal-400 transition-colors">Planos Empresariais</a></li>
+            </ul>
+          </div>
+          <div>
+            <h5 class="text-white font-semibold mb-4 text-sm">Serviços</h5>
+            <ul class="space-y-2 text-sm">
+              <li><a href="#" class="hover:text-teal-400 transition-colors">Agendar Consulta</a></li>
+              <li><a href="#" class="hover:text-teal-400 transition-colors">Rede Credenciada</a></li>
+              <li><a href="#" class="hover:text-teal-400 transition-colors">Resultados Online</a></li>
+              <li><a href="#" class="hover:text-teal-400 transition-colors">Carteirinha Digital</a></li>
+              <li><a href="#" class="hover:text-teal-400 transition-colors">App Mobile</a></li>
+            </ul>
+          </div>
+          <div>
+            <h5 class="text-white font-semibold mb-4 text-sm" id="cobertura">Contato</h5>
+            <ul class="space-y-2 text-sm">
+              <li>📞 0800-123-4567</li>
+              <li>💬 WhatsApp: (11) 98765-4321</li>
+              <li>📧 contato@conveniosaudemais.com.br</li>
+              <li class="pt-1 text-xs">Seg-Sex: 8h às 20h<br>Sáb: 8h às 14h</li>
+            </ul>
+          </div>
+        </div>
+        <div class="border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+          <p>© 2025 ConvênioSaúde+. Todos os direitos reservados.</p>
+          <div class="flex gap-6">
+            <a href="#" class="hover:text-teal-400 transition-colors">Política de Privacidade</a>
+            <a href="#" class="hover:text-teal-400 transition-colors">Termos de Uso</a>
+            <a href="#" class="hover:text-teal-400 transition-colors">ANS</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- ═══════════════════════ CHAT WIDGET ═══════════════════════ -->
+
+    <!-- Chat Panel -->
+    <div id="chat-panel" class="hidden fixed bottom-24 right-6 z-50 w-[370px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gray-100 chat-panel" style="height:580px;max-height:calc(100vh - 8rem);">
+      <!-- Chat Header -->
+      <div class="bg-gradient-to-r from-teal-600 to-teal-500 p-4 text-white flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="font-semibold text-sm">ConvênioSaúde+</p>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="w-1.5 h-1.5 bg-green-300 rounded-full pulse-dot"></span>
+              <p class="text-xs text-teal-100">Assistente Virtual · Online</p>
+            </div>
+          </div>
+        </div>
+        <button onclick="closeChat()" class="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors" aria-label="Fechar chat">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Messages -->
+      <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50"></div>
+
+      <!-- Footer -->
+      <div class="p-3 bg-white border-t border-gray-100 shrink-0 text-center text-xs text-gray-400">
+        📞 0800-123-4567 · Seg-Sex 8h-20h
+      </div>
+    </div>
+
+    <!-- Floating Button -->
+    <button id="chat-btn" onclick="toggleChat()" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-700 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center hover:scale-110" aria-label="Abrir chat">
+      <svg id="chat-btn-icon" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+      </svg>
+      <svg id="chat-btn-close" class="w-6 h-6 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+      <span id="chat-notif" class="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-white pulse-dot"></span>
+    </button>
+
+    <!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
+    <script>
+      /* ── Mobile menu ── */
+      const menuBtn = document.getElementById('menu-btn');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const menuIconOpen = document.getElementById('menu-icon-open');
+      const menuIconClose = document.getElementById('menu-icon-close');
+
+      menuBtn.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+        menuIconOpen.classList.toggle('hidden');
+        menuIconClose.classList.toggle('hidden');
+      });
+
+      // Close mobile menu on nav link click
+      mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+        mobileMenu.classList.add('hidden');
+        menuIconOpen.classList.remove('hidden');
+        menuIconClose.classList.add('hidden');
+      }));
+
+      /* ── Chat state ── */
+      let chatOpen = false;
+      let initialized = false;
+
+      const panel = document.getElementById('chat-panel');
+      const btnIcon = document.getElementById('chat-btn-icon');
+      const btnClose = document.getElementById('chat-btn-close');
+      const notif = document.getElementById('chat-notif');
+      const messagesEl = document.getElementById('chat-messages');
+
+      function openChat() {
+        chatOpen = true;
+        panel.classList.remove('hidden');
+        panel.classList.add('flex');
+        btnIcon.classList.add('hidden');
+        btnClose.classList.remove('hidden');
+        notif.classList.add('hidden');
+        if (!initialized) { initialized = true; initChat(); }
+      }
+
+      function closeChat() {
+        chatOpen = false;
+        panel.classList.add('hidden');
+        panel.classList.remove('flex');
+        btnIcon.classList.remove('hidden');
+        btnClose.classList.add('hidden');
+      }
+
+      function toggleChat() { chatOpen ? closeChat() : openChat(); }
+
+      /* ── Chat logic ── */
+      function now() {
+        return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      }
+
+      function scrollBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function renderUserMsg(text) {
+        const div = document.createElement('div');
+        div.className = 'flex justify-end msg-in';
+        div.innerHTML = `
+          <div class="max-w-[85%] bg-teal-600 text-white rounded-2xl rounded-br-sm p-3">
+            <p class="text-sm leading-relaxed whitespace-pre-line">${escHtml(text)}</p>
+            <p class="text-xs opacity-50 mt-1.5">${now()}</p>
+          </div>`;
+        messagesEl.appendChild(div);
+        scrollBottom();
+      }
+
+      function showTyping() {
+        const div = document.createElement('div');
+        div.id = 'typing-indicator';
+        div.className = 'flex justify-start msg-in';
+        div.innerHTML = `
+          <div class="bg-white rounded-2xl rounded-bl-sm shadow-sm border border-gray-100 p-3">
+            <div class="flex gap-1.5">
+              <div class="w-2 h-2 bg-teal-500 rounded-full typing-dot"></div>
+              <div class="w-2 h-2 bg-teal-500 rounded-full typing-dot"></div>
+              <div class="w-2 h-2 bg-teal-500 rounded-full typing-dot"></div>
+            </div>
+          </div>`;
+        messagesEl.appendChild(div);
+        scrollBottom();
+      }
+
+      function removeTyping() {
+        const el = document.getElementById('typing-indicator');
+        if (el) el.remove();
+      }
+
+      function renderBotMsg(text, options) {
+        showTyping();
+        setTimeout(() => {
+          removeTyping();
+          const div = document.createElement('div');
+          div.className = 'flex justify-start msg-in';
+          const optionsHtml = options && options.length
+            ? `<div class="mt-3 space-y-1.5">${options.map(o =>
+                `<button onclick="handleOption(this,'${escAttr(o)}')" class="w-full text-left px-3 py-2 bg-teal-50 text-teal-700 border border-teal-200 rounded-lg hover:bg-teal-100 hover:border-teal-300 transition-all duration-150 text-sm font-medium">${escHtml(o)}</button>`
+              ).join('')}</div>`
+            : '';
+          div.innerHTML = `
+            <div class="max-w-[85%] bg-white text-gray-800 rounded-2xl rounded-bl-sm shadow-sm border border-gray-100 p-3">
+              <p class="text-sm leading-relaxed whitespace-pre-line">${escHtml(text)}</p>
+              ${optionsHtml}
+              <p class="text-xs opacity-50 mt-1.5">${now()}</p>
+            </div>`;
+          messagesEl.appendChild(div);
+          scrollBottom();
+        }, 800);
+      }
+
+      function handleOption(btn, option) {
+        // Disable all option buttons in that message
+        btn.closest('.max-w-\\[85\\%\\]').querySelectorAll('button').forEach(b => {
+          b.disabled = true;
+          b.classList.add('opacity-50', 'cursor-not-allowed');
+        });
+        renderUserMsg(option);
+        respond(option);
+      }
+
+      function escHtml(str) {
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+      function escAttr(str) { return str.replace(/'/g,"\\'"); }
+
+      const MENU = ['Consultar planos disponíveis','Dúvidas sobre cobertura','Solicitar carteirinha','Agendar consulta','Falar com atendente'];
+
+      function initChat() {
+        renderBotMsg('Olá! Seja bem-vindo(a) ao atendimento virtual do ConvênioSaúde+! 👋\n\nComo posso ajudar você hoje?', MENU);
+      }
+
+      function respond(opt) {
+        switch(opt) {
+          case 'Consultar planos disponíveis':
+            renderBotMsg(
+              'Temos 3 opções de planos para você:\n\n💼 Plano Básico - R$ 199/mês\n- Consultas ilimitadas\n- Exames básicos\n- Rede credenciada ampla\n\n💎 Plano Premium - R$ 349/mês\n- Tudo do Básico +\n- Internações e cirurgias\n- Exames complexos\n\n⭐ Plano VIP - R$ 549/mês\n- Tudo do Premium +\n- Atendimento domiciliar\n- Rede internacional\n- Sem carência\n\nQual plano deseja conhecer melhor?',
+              ['Plano Básico','Plano Premium','Plano VIP','Voltar ao menu']
+            ); break;
+
+          case 'Plano Básico':
+          case 'Plano Premium':
+          case 'Plano VIP': {
+            const desc = opt === 'Plano Básico'
+              ? 'um plano completo com ótimo custo-benefício'
+              : opt === 'Plano Premium'
+              ? 'cobertura completa para toda a família'
+              : 'o máximo em atendimento de saúde sem preocupações';
+            renderBotMsg(`Excelente escolha! O ${opt} é ideal para quem busca ${desc}.\n\nGostaria de contratar ou tirar mais dúvidas?`,
+              ['Contratar agora','Mais informações','Ver outros planos','Voltar ao menu']
+            ); break;
+          }
+
+          case 'Dúvidas sobre cobertura':
+            renderBotMsg('Posso esclarecer suas dúvidas sobre cobertura.\n\nQual tipo você gostaria de saber?',
+              ['Consultas e especialidades','Exames e procedimentos','Internação e cirurgias','Atendimento de emergência','Voltar ao menu']
+            ); break;
+
+          case 'Consultas e especialidades':
+            renderBotMsg('🏥 Cobertura de Consultas\n\nTodos os planos incluem:\n- Clínico geral (ilimitado)\n- Cardiologia\n- Pediatria\n- Ginecologia\n- Ortopedia\n- Dermatologia\n- Oftalmologia\n- +30 especialidades!\n\nAgendamento online disponível 24h.',
+              ['Agendar consulta','Ver especialidades completas','Voltar ao menu']
+            ); break;
+
+          case 'Exames e procedimentos':
+            renderBotMsg('🔬 Cobertura de Exames\n\n✅ Exames laboratoriais\n✅ Raio-X e ultrassom\n✅ Tomografia e ressonância (Premium e VIP)\n✅ Endoscopia\n✅ Ecocardiograma\n✅ Mamografia\n\nResultados online em até 24h!',
+              ['Onde fazer exames','Voltar ao menu']
+            ); break;
+
+          case 'Internação e cirurgias':
+            renderBotMsg('🏨 Cobertura de Internação\n\nPlanos Premium e VIP incluem:\n✅ Internação em quarto privativo\n✅ Cirurgias de todas as especialidades\n✅ UTI\n✅ Materiais e medicamentos\n✅ Acompanhante 24h\n\n*Sujeito a carência de 180 dias (exceto urgências)',
+              ['Hospitais credenciados','Voltar ao menu']
+            ); break;
+
+          case 'Atendimento de emergência':
+            renderBotMsg('🚨 Atendimento de Emergência\n\nDisponível 24/7 em todos os planos:\n✅ Pronto-socorro\n✅ Atendimento de urgência\n✅ Ambulância (Premium e VIP)\n\n*Sem carência para urgências e emergências',
+              ['Unidades de emergência','Voltar ao menu']
+            ); break;
+
+          case 'Solicitar carteirinha':
+            renderBotMsg('💳 Solicitação de Carteirinha\n\nVocê já é beneficiário?',
+              ['Sim, sou beneficiário','Não, quero contratar']
+            ); break;
+
+          case 'Sim, sou beneficiário':
+            renderBotMsg('Para solicitar a 2ª via, informe:\n\n📱 Seu CPF\n📧 E-mail cadastrado\n\nA carteirinha será enviada em até 5 dias úteis.',
+              ['Enviar dados por e-mail','Falar com atendente','Voltar ao menu']
+            ); break;
+
+          case 'Não, quero contratar':
+            renderBotMsg('Que ótimo! Vamos consultar os planos disponíveis?',
+              ['Ver planos','Falar com consultor','Voltar ao menu']
+            ); break;
+
+          case 'Agendar consulta':
+            renderBotMsg('📅 Agendamento de Consulta\n\nQual especialidade você precisa?',
+              ['Clínico Geral','Cardiologia','Pediatria','Ortopedia','Outras especialidades','Voltar ao menu']
+            ); break;
+
+          case 'Clínico Geral': case 'Cardiologia': case 'Pediatria': case 'Ortopedia':
+            renderBotMsg(`Horários disponíveis para ${opt} esta semana:\n\n• Segunda: 09h, 14h, 16h\n• Terça: 10h, 15h, 17h\n• Quarta: 08h, 11h, 16h30\n• Quinta: 09h30, 14h, 15h30\n• Sexta: 10h, 13h, 16h\n\n*Fale com um atendente para confirmar.`,
+              ['Falar com atendente','Ver mais horários','Voltar ao menu']
+            ); break;
+
+          case 'Falar com atendente': case 'Falar com consultor':
+            renderBotMsg('👤 Transferindo para atendente\n\nVocê será atendido em instantes!\n\n⏱ Espera média: 2 minutos\n\n📞 0800-123-4567\n💬 WhatsApp: (11) 98765-4321\n\nSeg a Sex: 8h às 20h | Sáb: 8h às 14h',
+              ['Aguardar atendente','Deixar mensagem','Voltar ao menu']
+            ); break;
+
+          case 'Contratar agora':
+            renderBotMsg('🎉 Excelente decisão!\n\nNosso especialista vai:\n✅ Confirmar seus dados\n✅ Explicar formas de pagamento\n✅ Enviar o contrato digital\n✅ Ativar seu plano imediatamente\n\nDeseja prosseguir?',
+              ['Sim, continuar','Ver formas de pagamento','Voltar ao menu']
+            ); break;
+
+          case 'Voltar ao menu': case 'Ver outros planos': case 'Ver planos':
+            renderBotMsg('Como posso ajudar você?', MENU); break;
+
+          default:
+            renderBotMsg('Desculpe, não entendi. Como posso ajudar?', MENU);
+        }
+      }
+    </script>
+  </body>
+</html>
