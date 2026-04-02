@@ -27,3 +27,16 @@ Single-file Streamlit dashboard (`app.py`) for Brazilian stock market analysis.
 - `START = "2025-01-01"`, `END = date.today()` — data window
 
 **UI language:** Brazilian Portuguese throughout.
+
+## GitHub
+
+Repositório: https://github.com/IgorSantosPedro/brazilian-stock-dashboard
+
+**Sincronização automática:** O Claude Code está configurado com um hook `PostToolUse` que faz commit e push automaticamente para o GitHub após cada edição de arquivo (`Edit` ou `Write`). As mensagens de commit seguem o formato `Auto-update: YYYY-MM-DD HH:MM:SS`.
+
+Para operações manuais:
+```bash
+git add .
+git commit -m "mensagem"
+git push origin main
+```
